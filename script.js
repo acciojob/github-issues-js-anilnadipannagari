@@ -1,49 +1,44 @@
- const pNoSpan = document.getElementById('pNo');
- const   listElement = document.getElementById('list');
-  const  nextBtn = document.getElementById('load_next');
-  const  prevBtn = document.getElementById('load_prev');
+let nextButton = document.querySelector("#load_next");
+let previousButton = document.querySelector("#load_prev");
+let pageNumber = document.querySelector("#page-number");
+let ol = document.querySelector("ol");
 
-let pageNumber = 1;
+nextButton.addEventListener("click", handleClick);
+previousButton.addEventListener("click", handleClick);
 
-const renderIssues=(issues)=>{
-	while(listElement.firstChild){
-		listElement.removeChild(listElement.firstChild);
-	}
-	issues.forEach(issues=>{
-		const li = document.createElement('li');
-		li.textContent = issues.title;
-		
-		listElement.appendChild(li);
-	});
-	
+async function handleClick(event) {
+  let action = event.target.innerText;
+  let currentCount = Number(pageNumber.innerText);
+
+  if (action == "Next Page") {
+    // increment page
+    pageNumber.innerText = currentCount + 1;
+    const issues = await getGithubIssuesTitle(currentCount + 1);
+    renderLists(issues);
+  } else if (action == "Previous Page" && currentCount != 1) {
+    // decrease page
+    pageNumber.innerText = currentCount - 1;
+    const issues = await getGithubIssuesTitle(currentCount - 1);
+    renderLists(issues);
+  }
 }
 
-const fetchIssues = async()=> {
-    pNoSpan.textContent = pageNumber;
-    const url  = `https://api.github.com/repositories/1296269/issues?page=${pageNumber}&per_page=5`
-    const res = await fetch(url);
-    const data = await res.json();
+function renderLists(issues) {
+  ol.innerText = "";
+  for (let issueName of issues) {
+    let li = document.createElement("li");
+    li.innerText = issueName;
+    ol.append(li);
+  }
+}
+async function getGithubIssuesTitle(pageNum = 1) {
+  const response = await fetch(
+    `https://api.github.com/repositories/1296269/issues?page=${pageNum}&per_page=5`
+  );
 
-    renderIssues(data);
-
+  const result = await response.json();
+  return result.map((obj) => obj.title);
 }
 
-function handleNextClick(){
-	  pageNumber+=1;
-	fetchIssues();
-}
-     function prevClick(){
-      if(pageNumber===1){
-		   alert("page number is 1");
-		  return;
-	  }
-		pageNumber -=1;
-		 fetchIssues();
-		 
-		 
-	 }
-
-
-nextBtn.addEventListener('click' ,handleNextClick);
-prevBtn.addEventListener('click',prevClick);
-document.addEventListener('DOMContentLoaded', fetchIssues);
+// on page load
+getGithubIssuesTitle().then((data) => renderLists(data));
